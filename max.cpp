@@ -1,5 +1,6 @@
 #include <concepts>
 #include <cstdio>
+#include <string>
 
 template<typename T> requires std::integral<T> || std::floating_point<T> [[nodiscard]] T constexpr max(const T val_0, const T val_1) {
     return val_0 >= val_1 ? val_0 : val_1;
@@ -20,5 +21,8 @@ int main(void) {
 
     ::max(ptrone, ptrten); // identical types but still errs as the types are not acceptable according to our concepts
 
+    ::max(543, 0x256434);
+    ::max(6.653, 0.4425);
+    ::max(std::string { "Me" }, std::string { "me" });
     return 0;
 }
