@@ -21,6 +21,7 @@ $cflags = @(
     "/diagnostics:caret",
     "/DNDEBUG",
     "/D_NDEBUG",
+    "/EHac",
     "/F0x10485100",
     "/favor:INTEL64",
     "/fp:strict",
@@ -38,6 +39,7 @@ $cflags = @(
     "/Wall",
     "/wd4710",      # not inlined
     "/wd4820",      # struct padding
+    "/wd4711",      # selected for automatic inline expansion
     "/Zc:preprocessor",
     "/link /DEBUG:NONE"
 )
