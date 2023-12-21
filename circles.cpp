@@ -10,14 +10,15 @@
 #pragma comment(lib, "Gdi32.lib")
 #pragma comment(lib, "User32.lib")
 
-static constexpr std::size_t NMARKERS { 2000 };
-constexpr long double        TWOPI { M_PI * 2.0000000L };
+static constexpr std::size_t NMARKERS { 5'000 };
+constexpr long double        PI { M_PI };
 
 LRESULT WindowEventHandler(_In_ HWND hWindow, _In_ UINT uMessage, _In_ WPARAM wParameter, _In_ LPARAM lParameter) noexcept {
-    static int  x_windowcoord {}, y_windowcoord {};
-    HDC         hDeviceContext {};
-    PAINTSTRUCT painter {};
-    POINT       points[NMARKERS] {};
+    static std::size_t x_windowcoord {}, y_windowcoord {};
+    HDC                hDeviceContext {};
+    PAINTSTRUCT        painter {};
+    POINT              upperhalf[NMARKERS] {};
+    POINT              lowerhalf[NMARKERS] {};
 
     switch (uMessage) {
         case WM_SIZE :
@@ -33,12 +34,21 @@ LRESULT WindowEventHandler(_In_ HWND hWindow, _In_ UINT uMessage, _In_ WPARAM wP
                 MoveToEx(hDeviceContext, 0, y_windowcoord / 2, nullptr);
                 LineTo(hDeviceContext, x_windowcoord, y_windowcoord / 2);
 
-                for (std::size_t i = 0; i < NMARKERS; ++i) {
-                    points[i].x = i * x_windowcoord / NMARKERS;
-                    points[i].y = (int) (y_windowcoord / 2 * (1 - sin(TWOPI * i / NMARKERS)));
+                const long double xd = x_windowcoord / NMARKERS;
+                const long double yd = y_windowcoord / NMARKERS / 2;
+
+                for (std::size_t i {}; i < NMARKERS; ++i) {
+                    upperhalf[i].x = x_windowcoord + xd;
+                    upperhalf[i].y = y_windowcoord + yd;
                 }
 
-                Polyline(hDeviceContext, points, NMARKERS);
+                for (std::size_t i {}; i < NMARKERS; ++i) {
+                    lowerhalf[i].x = x_windowcoord + xd;
+                    lowerhalf[i].y = y_windowcoord - yd;
+                }
+
+                Polyline(hDeviceContext, upperhalf, NMARKERS);
+                Polyline(hDeviceContext, lowerhalf, NMARKERS);
                 return 0;
             }
         case WM_DESTROY :
@@ -71,7 +81,7 @@ class Window {
             windowClass.hInstance     = hInstance;
             windowClass.hIcon         = LoadIconW(nullptr, IDI_WINLOGO);
             windowClass.hCursor       = LoadIconW(nullptr, IDC_ARROW);
-            windowClass.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_BACKGROUND);
+            windowClass.hbrBackground = reinterpret_cast<HBRUSH>(GetStockObject(WHITE_BRUSH));
             windowClass.lpszMenuName  = nullptr;
             windowClass.cbClsExtra    = 0;
             windowClass.cbWndExtra    = 0;
@@ -90,7 +100,7 @@ class Window {
                 WS_EX_OVERLAPPEDWINDOW | WS_EX_STATICEDGE | WS_EX_WINDOWEDGE,
                 L"Window",
                 L"Spectre",
-                WS_MAXIMIZE | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
+                WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
@@ -101,6 +111,7 @@ class Window {
                 nullptr
             );
             ShowWindow(hWindow, SW_SHOW);
+            UpdateWindow(hWindow);
         }
 
         Window(const Window&)            = delete;
@@ -112,17 +123,16 @@ class Window {
         bool HandleEvents(void) const noexcept {
             MSG mWindowEvent {};
             while (PeekMessageW(&mWindowEvent, hWindow, 0, 0, PM_REMOVE)) {
-                if (mWindowEvent.message == WM_QUIT) return false;
                 TranslateMessage(&mWindowEvent);
                 DispatchMessageW(&mWindowEvent);
             }
-            return true;
+            return (mWindowEvent.message == WM_QUIT) ? false : true;
         }
 };
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
     auto window { Window {} };
-    while (window.HandleEvents()) Sleep(100);
-    MessageBoxExW(nullptr, L"Window closed!", nullptr, MB_OK | MB_ICONERROR | MB_APPLMODAL, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
+    while (window.HandleEvents()) Sleep(10);
+    MessageBoxExW(nullptr, L"Window closed!", nullptr, MB_OK | MB_ICONERROR, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
     return EXIT_SUCCESS;
 }
